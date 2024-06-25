@@ -42,6 +42,7 @@ export type { UserPasswordResetRequest } from './models/UserPasswordResetRequest
 export type { UserPasswordUpdateRequest } from './models/UserPasswordUpdateRequest';
 export type { UserQueryRequest } from './models/UserQueryRequest';
 export type { UserRegisterRequest } from './models/UserRegisterRequest';
+export type { UserResetPwdRequest } from './models/UserResetPwdRequest';
 export type { UserSafetyVO } from './models/UserSafetyVO';
 export type { UserUpdateRequest } from './models/UserUpdateRequest';
 

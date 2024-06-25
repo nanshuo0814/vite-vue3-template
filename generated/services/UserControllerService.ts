@@ -17,6 +17,7 @@ import type { UserPasswordResetRequest } from '../models/UserPasswordResetReques
 import type { UserPasswordUpdateRequest } from '../models/UserPasswordUpdateRequest';
 import type { UserQueryRequest } from '../models/UserQueryRequest';
 import type { UserRegisterRequest } from '../models/UserRegisterRequest';
+import type { UserResetPwdRequest } from '../models/UserResetPwdRequest';
 import type { UserUpdateRequest } from '../models/UserUpdateRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -36,6 +37,27 @@ export class UserControllerService {
             method: 'POST',
             url: '/api/user/add',
             body: userAddRequest,
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
+     * 用户通过邮箱验证码重置密码
+     * @param userResetPwdRequest userResetPwdRequest
+     * @returns ApiResponse_string_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static userResetPwdByEmailUsingPost(
+        userResetPwdRequest: UserResetPwdRequest,
+    ): CancelablePromise<ApiResponse_string_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/user/by-email/reset-pwd',
+            body: userResetPwdRequest,
             errors: {
                 401: `Unauthorized`,
                 403: `Forbidden`,
@@ -205,7 +227,7 @@ export class UserControllerService {
         });
     }
     /**
-     * 重置用户密码
+     * 重置用户密码(管理员)
      * @param idRequest idRequest
      * @returns ApiResponse_boolean_ OK
      * @returns any Created

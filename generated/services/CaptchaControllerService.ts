@@ -9,6 +9,35 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class CaptchaControllerService {
     /**
+     * 验证邮箱验证码
+     * @param captcha 验证码
+     * @param email 目标电子邮件
+     * @param emailCaptchaType 邮箱类型
+     * @returns ApiResponse_string_ OK
+     * @returns any Created
+     * @throws ApiError
+     */
+    public static checkEmailCaptchaUsingPost(
+        captcha: string,
+        email: string,
+        emailCaptchaType: string,
+    ): CancelablePromise<ApiResponse_string_ | any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/captcha/checkEmailCaptcha',
+            query: {
+                'captcha': captcha,
+                'email': email,
+                'emailCaptchaType': emailCaptchaType,
+            },
+            errors: {
+                401: `Unauthorized`,
+                403: `Forbidden`,
+                404: `Not Found`,
+            },
+        });
+    }
+    /**
      * 获取图片验证码
      * @returns ApiResponse_Map_string_string_ OK
      * @throws ApiError

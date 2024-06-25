@@ -2,7 +2,6 @@
 import { onMounted, reactive, ref } from 'vue'
 import { CaptchaControllerService, UserControllerService, type UserLoginRequest } from '../../../generated'
 import { Message } from '@arco-design/web-vue'
-import router from '@/router'
 
 // 表单数据
 const form = reactive({

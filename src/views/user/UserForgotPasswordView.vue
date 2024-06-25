@@ -1,94 +1,241 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
+import { CaptchaControllerService, UserControllerService, type UserResetPwdRequest } from '../../../generated'
+import { Message } from '@arco-design/web-vue'
 
 // 定义进度状态
 const progressSteps = ref(4)
 const currentProgress = ref(0)
 
-// 模拟发送邮件和验证过程的函数
+// 发送邮件和验证过程的函数
+const formRef = ref(null)
 const sendEmail = async () => {
-  // 模拟异步操作，这里仅作示例
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  currentProgress.value = 1 // 发送邮件成功后，进度到第二步
+  try {
+    // 验证邮箱是否填写
+    formRef.value.validateField('email', async (errors) => {
+      if (errors) {
+        Message.error({
+          content: '邮箱格式错误！',
+          closable: true
+        })
+        return
+      } else {
+        // 发送验证码逻辑
+        const response = await CaptchaControllerService.sendEmailCaptchaUsingPost(form.email, 'reset')
+        // console.log(response)
+        if (response.code === 20000) {
+          // 发送成功
+          Message.success({
+            content: response.data,
+            closable: true
+          })
+          currentProgress.value = 1 // 发送邮件成功后，进度到第二步
+        } else {
+          // 失败
+          Message.error({
+            content: response.message,
+            closable: true
+          })
+        }
+      }
+    })
+  } catch (error) {
+    console.error('邮箱验证码发送失败，系统错误！', error)
+  }
 }
 
-const verifyCode = (code: string) => {
+const verifyCode = async () => {
   // 这里应该有验证逻辑，简化处理直接进入下一步
-  currentProgress.value = 2
+  try {
+    // 验证验证码逻辑
+    const response = await CaptchaControllerService.checkEmailCaptchaUsingPost(form.code, form.email, 'reset')
+    // console.log(response)
+    if (response.code === 20000) {
+      // 验证成功
+      Message.success({
+        content: response.message,
+        closable: true
+      })
+      form.voucher = response.data
+      currentProgress.value = 2
+    } else {
+      // 失败
+      Message.error({
+        content: response.message,
+        closable: true
+      })
+    }
+  } catch (error) {
+    console.error('验证码验证失败，系统错误！', error)
+  }
 }
 
-const resetPassword = () => {
+const resetPassword = async () => {
   // 密码重置逻辑
-  currentProgress.value = 3
+  try {
+    const response = await UserControllerService.userResetPwdByEmailUsingPost(form)
+    // console.log(response)
+    if (response.code === 20000) {
+      // 验证成功
+      Message.success({
+        content: response.data,
+        closable: true
+      })
+      currentProgress.value = 3
+    } else {
+      // 失败
+      Message.error({
+        content: response.message,
+        closable: true
+      })
+    }
+  } catch (error) {
+    console.error('重置密码失败，系统错误！', error)
+  }
 }
 // 添加一个方法用于获取步骤的标签文本
 const getCurrentStepDescription = (): string => {
   switch (currentProgress.value) {
-    case 0: return '步骤1：输入邮箱';
-    case 1: return '步骤2：验证邮箱';
-    case 2: return '步骤3：设置新密码';
-    case 3: return '步骤4：密码已重置，请登录';
-    default: return '';
+    case 0:
+      return '步骤1：输入邮箱'
+    case 1:
+      return '步骤2：验证邮箱'
+    case 2:
+      return '步骤3：设置新密码'
+    case 3:
+      return '步骤4：密码已重置，请登录'
+    default:
+      return ''
   }
-};
+}
 // 添加返回上一步的方法
 const goToPreviousStep = () => {
   if (currentProgress.value > 0) {
-    currentProgress.value -= 1;
+    currentProgress.value -= 1
   }
-};
+}
+const form = reactive({
+  email: '',
+  code: '',
+  newPassword: '',
+  confirmPassword: '',
+  voucher: ''
+} as UserResetPwdRequest)
+const rules = {
+  email: [
+    { required: true, message: '邮箱不能为空' }, { type: 'email', message: '请输入正确的邮箱地址' }
+  ],
+  code: [
+    {
+      required: true,
+      message: '验证码不能为空'
+    }
+  ],
+  newPassword: [
+    {
+      required: true,
+      message: '密码不能为空'
+    },
+    {
+      match: /^(?=.*[A-Za-z])(?=.*[\d.!@#$%^&*()])(?:[A-Za-z\d.!@#$%^&*()]){6,16}$/,
+      message: '密码至少包含字母和数字，长度在6-16之间'
+    }
+  ],
+  confirmPassword: [
+    {
+      required: true,
+      message: '确认密码不能为空'
+    },
+    {
+      minLength: 6,
+      message: '确认密码长度不能小于6'
+    },
+    {
+      maxLength: 20,
+      message: '确认密码长度不能大于20'
+    },
+    {
+      validator(value, callback) {
+        if (value !== form.newPassword) {
+          callback('确认密码与密码不一致')
+        } else {
+          callback()
+        }
+      },
+      message: '确认密码与密码不一致'
+    }
+  ]
+}
+
 </script>
 
 <template>
   <div id="app" class="reset-password-container">
-    <div class="content">
-      <div class="content-top">
-        <h1>找回密码</h1>
-        <div class="progress-step-description" v-if="currentProgress >= 0">
-          {{ getCurrentStepDescription() }}
+    <a-form :rules="rules" ref="formRef" size="large" :model="form">
+      <div class="content">
+        <div class="content-top">
+          <h1>找回密码</h1>
+          <div class="progress-step-description" v-if="currentProgress >= 0">
+            {{ getCurrentStepDescription() }}
+          </div>
+          <a-progress animation :steps="progressSteps" :percent="(currentProgress + 1) / progressSteps" />
         </div>
-        <a-progress animation :steps="progressSteps" :percent="(currentProgress + 1) / progressSteps" />
-<!--        <a-progress animation :steps="progressSteps" :percent="(currentProgress + 1) / progressSteps" />-->
+        <div class="content-center">
+          <div v-if="currentProgress === 0">
+            <!-- 添加返回按钮逻辑，但此处为第一步，不需要返回按钮 -->
+            <h2>输入绑定的邮箱地址</h2>
+            <a-form-item validate-trigger="blur"
+                         field="email" hide-label hide-asterisk>
+              <a-input v-model="form.email" placeholder="请输入邮箱地址" />
+            </a-form-item>
+            <a-button type="primary" @click="sendEmail">发送验证码</a-button>
+          </div>
+          <div v-else-if="currentProgress === 1">
+            <a-button type="primary" @click="goToPreviousStep">上一步</a-button>
+            <h2>输入收到的验证码</h2>
+            <a-form-item validate-trigger="blur"
+                         field="code" hide-label hide-asterisk>
+              <a-input v-model="form.code" placeholder="请输入验证码" />
+              <a-button type="primary" @click="verifyCode('your-code')">验证</a-button>
+            </a-form-item>
+          </div>
+          <div v-else-if="currentProgress === 2">
+            <a-button type="primary" @click="goToPreviousStep">上一步</a-button>
+            <h2>设置新密码</h2>
+            <a-form-item validate-trigger="blur"
+                         field="newPassword" hide-label hide-asterisk>
+              <a-input v-model="form.newPassword" placeholder="新密码" />
+            </a-form-item>
+            <a-form-item validate-trigger="blur"
+                         field="confirmPassword" hide-label hide-asterisk>
+              <a-input v-model="form.confirmPassword" placeholder="确认新密码" />
+            </a-form-item>
+            <a-form-item validate-trigger="blur"
+                         field="" hide-label hide-asterisk>
+              <a-button type="primary" @click="resetPassword">完成重置</a-button>
+            </a-form-item>
+          </div>
+          <div v-else-if="currentProgress === 3">
+            <a-result status="success" title="温馨提示">
+              <template #subtitle>
+                您的密码已重置，请去登录
+              </template>
+              <template #extra>
+                <a-space>
+                  <a-button href="/user/login" type='primary'>去登录</a-button>
+                </a-space>
+              </template>
+            </a-result>
+          </div>
+        </div>
+        <div class="content-bottom">
+          <span class="login-footer-text-span">Copyright © 2024 - 至今 </span>
+          <span class="login-footer-text-span"> by <strong><a target="_blank"
+                                                              href="https://github.com/nanshuo0814">南烁</a></strong></span>
+          <span class="login-footer-text-span"> 保留所有权利</span>
+        </div>
       </div>
-      <div class="content-center">
-        <div v-if="currentProgress === 0">
-          <!-- 添加返回按钮逻辑，但此处为第一步，不需要返回按钮 -->
-          <h2>输入绑定的邮箱地址</h2>
-          <input type="email" placeholder="请输入邮箱地址" />
-          <button @click="sendEmail">发送验证码</button>
-        </div>
-        <div v-else-if="currentProgress === 1">
-          <button @click="goToPreviousStep">上一步</button>
-          <h2>输入收到的验证码</h2>
-          <input type="text" placeholder="请输入验证码" />
-          <button @click="verifyCode('your-code')">验证</button>
-        </div>
-        <div v-else-if="currentProgress === 2">
-          <button @click="goToPreviousStep">上一步</button>
-          <h2>设置新密码</h2>
-          <input type="password" placeholder="新密码" />
-          <input type="password" placeholder="确认新密码" />
-          <button @click="resetPassword">完成重置</button>
-        </div>
-        <div v-else-if="currentProgress === 3">
-          <a-result status="success" title="温馨提示" >
-            <template #subtitle>
-              您的密码已重置，请去登录
-            </template>
-            <template #extra>
-              <a-space>
-                <a-button href="/user/login" type='primary'>去登录</a-button>
-              </a-space>
-            </template>
-          </a-result>
-        </div>
-      </div>
-      <div class="content-bottom">
-        <span class="login-footer-text-span">Copyright © 2024 - 至今 </span>
-        <span class="login-footer-text-span"> by <strong><a target="_blank" href="https://github.com/nanshuo0814">南烁</a></strong></span>
-        <span class="login-footer-text-span"> 保留所有权利</span>
-      </div>
-    </div>
+    </a-form>
   </div>
 </template>
 
@@ -120,6 +267,7 @@ const goToPreviousStep = () => {
   color: white;
   border: none;
   cursor: pointer;
+  //margin-top: 20px;
 }
 
 .progress-steps span {
@@ -132,11 +280,13 @@ const goToPreviousStep = () => {
   opacity: 1;
   font-weight: bold;
 }
+
 .progress-step-description {
   text-align: center;
   margin-bottom: 10px;
   font-weight: bold;
 }
+
 .content-bottom {
   position: fixed;
   bottom: 0;
