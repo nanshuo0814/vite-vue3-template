@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { CaptchaControllerService, UserControllerService, type UserLoginRequest } from '../../../generated'
+import {
+  CaptchaControllerService,
+  UserControllerService,
+  type UserLoginRequest
+} from '../../../generated'
 import { Message } from '@arco-design/web-vue'
+import { userStores } from '@/stores/user'
+import router from '@/router'
+import CodeStatus from '@/constant/CodeStatus'
+const userStore = userStores()
 
 // 表单数据
 const form = reactive({
@@ -47,36 +55,49 @@ const rules = {
 
 // 提交表单
 const formRef = ref(null)
+const isLoading = ref(false);
 const handleSubmit = async () => {
   try {
+    isLoading.value = true
     // 校验表单
     const valid = await formRef.value.validate()
     // console.log(valid)
     if (valid) {
       Message.warning({ content: '请将表单填写完整！', closable: true })
+      isLoading.value = false
       return
     }
     const response = await UserControllerService.userLoginUsingPost(form)
     // console.log(response)
-    if (response.code === 20000) {
+    if (response.code === CodeStatus.SUCCESS) {
       // 登录成功
       Message.success({
         content: '登录成功！',
         closable: true
       })
+      isLoading.value = false
+      // 更新store
+      await userStore.getLoginUser()
       // 跳转到首页
-      window.location.href = '/'
+      router.push('/')
     } else {
       // 登录失败
-      Message.error({
-        content: response.message,
-        closable: true
-      })
+      // Message.error({
+      //   content: response.message,
+      //   closable: true
+      // })
+      isLoading.value = false
       refreshCode()
       form.imageCaptcha = ''
     }
   } catch (error) {
+    isLoading.value = false
     console.error('登录失败', error)
+    // 登录失败
+    Message.error({
+      content: "系统异常，请稍后再试！",
+      closable: true
+    })
     // 清空表单
     formRef.value.resetFields()
   }
@@ -105,7 +126,6 @@ async function fetchCaptcha() {
 function refreshCode() {
   fetchCaptcha()
 }
-
 </script>
 
 <template>
@@ -113,7 +133,7 @@ function refreshCode() {
     <div class="login-page">
       <a href="/" class="logo-link">
         <div class="login-logo">
-          <img style="width: 44px;height: 100%" src="@/assets/favicon.png" alt="logo" />
+          <img style="width: 44px; height: 100%" src="@/assets/favicon.png" alt="logo" />
           <span style="font-weight: bolder">烁烁南光</span>
         </div>
       </a>
@@ -124,23 +144,28 @@ function refreshCode() {
           </div>
         </div>
         <div class="form-login">
-          <a-form ref="formRef" :model="form" :style="{width:'330px'}" auto-label-width @submit="handleSubmit"
-                  :rules="rules">
+          <a-form ref="formRef" :model="form" :style="{ width: '330px' }" auto-label-width @submit="handleSubmit"
+            :rules="rules">
             <a-form-item field="userAccount" label="账号" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.userAccount" placeholder="请输入账号" />
             </a-form-item>
             <a-form-item field="userPassword" label="密码" validate-trigger="blur" hide-asterisk>
-              <a-input-password v-model=" form.userPassword
-            " placeholder="请输入你的密码" />
+              <a-input-password v-model="form.userPassword" placeholder="请输入你的密码" />
             </a-form-item>
             <a-form-item field="imageCaptcha" label="验证码" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.imageCaptcha" placeholder="请输入图片验证码" />
-              <img style="cursor: pointer;margin-left: 5px;width: 40%;height: 32px;"
-                   :src="captchaImageSrc"
-                   alt="图片验证码" @click="refreshCode()">
+              <img style="cursor: pointer; margin-left: 5px; width: 40%; height: 32px" :src="captchaImageSrc"
+                alt="图片验证码" @click="refreshCode()" />
             </a-form-item>
             <a-form-item style="text-align: right">
-              <a-button style="width: 100%" type="primary" html-type="submit">登录</a-button>
+              <a-button style="width: 100%" type="primary" html-type="submit" :loading="isLoading">
+                <span v-if="isLoading">
+                  <a-spin>
+                    登录中...
+                  </a-spin>
+                </span>
+                <span v-else>登录</span>
+              </a-button>
             </a-form-item>
           </a-form>
           <div class="login-footer-top">
@@ -152,8 +177,8 @@ function refreshCode() {
             </a>
           </div>
           <div class="login-footer-center">
-            <span>注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和 <a href="/"
-                                                                                    target="_blank">隐私政策</a></span>
+            <span>注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和
+              <a href="/" target="_blank">隐私政策</a></span>
           </div>
           <div class="login-footer-bottom">
             <div class="login-footer-text">
@@ -173,7 +198,7 @@ function refreshCode() {
 }
 
 .login-page {
-  background: url("@/assets/background.png") 0 0 / 100% 100%;
+  background: url('@/assets/background.png') 0 0 / 100% 100%;
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -200,7 +225,6 @@ function refreshCode() {
 
 .arco-form-item-content-flex {
   justify-content: center;
-
 }
 
 .arco-btn-secondary {
@@ -214,7 +238,7 @@ function refreshCode() {
 
 .login-logo span {
   font-size: 33px;
-  color: #1890FF;
+  color: #1890ff;
   margin-left: 10px;
   font-weight: 500;
 }
@@ -240,7 +264,7 @@ function refreshCode() {
 }
 
 .login-footer-top a {
-  color: #1890FF;
+  color: #1890ff;
   text-decoration: none;
 }
 
@@ -250,7 +274,7 @@ function refreshCode() {
 }
 
 .login-footer-center a {
-  color: #1890FF;
+  color: #1890ff;
   text-decoration: none;
 }
 

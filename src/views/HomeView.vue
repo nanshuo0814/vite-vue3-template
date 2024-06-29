@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { userStores } from '@/stores/user'
+const userStore = userStores()
+// setTimeout(async () => {
+  // const res = userStore.getLoginUser()
+  // console.log(res)
+// }, 2000)
 
 </script>
 
 <template>
-  这是首页
+  {{ userStore }}
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

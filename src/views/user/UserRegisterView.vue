@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { CaptchaControllerService, UserControllerService, type UserRegisterRequest } from '../../../generated'
+import {
+  CaptchaControllerService,
+  UserControllerService,
+  type UserRegisterRequest
+} from '../../../generated'
 import { Message } from '@arco-design/web-vue'
-import router from '@/router'
-
+import UserEmailCaptchaType from '@/constant/UserEmailCaptchaType'
+import router from '@/router';
+import CodeStatus from '@/constant/CodeStatus';
 
 const countdown = ref(300) // 倒计时初始值s
 const isCountingDown = ref(false) // 是否正在倒计时
 const timer = ref(null) // 存储定时器引用
 // 发送验证码函数
 const email = ref()
-const sendVerificationCode = async (field) => {
+const sendVerificationCode = async () => {
   try {
     // 验证邮箱是否填写
     formRef.value.validateField('email', async (errors) => {
@@ -21,31 +26,35 @@ const sendVerificationCode = async (field) => {
         })
         return
       } else {
-
-        // 禁用按钮，开始倒计时
-        isCountingDown.value = true
-
         // 这里调用实际发送验证码的API
         // await sendCodeToEmail(form.value.email);
         // 发送验证码逻辑
         email.value = form.email
-        const response = await CaptchaControllerService.sendEmailCaptchaUsingPost(email.value, 'register')
-        // console.log(response)
-        if (response.code === 20000) {
-          // 登录成功
-          Message.success({
-            content: response.data,
-            closable: true
-          })
-        } else {
+        try {
+          const response = await CaptchaControllerService.sendEmailCaptchaUsingPost(
+            email.value,
+            UserEmailCaptchaType.REGISTER
+          )
+          if (response.code === CodeStatus.SUCCESS) {
+            // 发送成功
+            Message.success({
+              content: response.data,
+              closable: true
+            })
+            // 禁用按钮，开始倒计时
+            isCountingDown.value = true
+            // 开始倒计时
+            startCountdown()
+          } 
+        } catch (error) {
           // 失败
-          Message.error({
-            content: response.data,
-            closable: true
-          })
+          // Message.error({
+          //   content: '邮箱验证码发送失败，系统错误！',
+          //   closable: true
+          // })
+          console.error('邮箱验证码发送失败，系统错误！', error)
+          return
         }
-        // 开始倒计时
-        startCountdown()
       }
     })
   } catch (error) {
@@ -72,7 +81,7 @@ const form = reactive({
   checkPassword: '',
   userName: '',
   email: '',
-  emailCaptcha: '',
+  emailCaptcha: ''
 } as UserRegisterRequest)
 
 // 表单校验规则
@@ -95,7 +104,7 @@ const rules = {
     {
       required: true,
       message: '用户名不能为空'
-    },
+    }
   ],
   userPassword: [
     {
@@ -150,9 +159,11 @@ const rules = {
 }
 
 // 提交表单
+const isLoading = ref(false);
 const formRef = ref(null)
 const handleSubmit = async () => {
   try {
+    isLoading.value = true
     // 校验表单
     const valid = await formRef.value.validate()
     // console.log(valid)
@@ -161,32 +172,40 @@ const handleSubmit = async () => {
         content: '请补充完整表单！',
         closable: true
       })
+      isLoading.value = false
       return
     }
     const response = await UserControllerService.userRegisterUsingPost(form)
     // console.log(response)
-    if (response.code === 20000) {
+    if (response.code === CodeStatus.SUCCESS) {
       // 登录成功
       Message.success({
         content: '注册成功！',
         closable: true
       })
+      isLoading.value = false
       // 跳转到登录页
-      window.location.href = '/user/login'
+      router.push('/user/login')
     } else {
       // 登录失败
-      Message.error({
-        content: response.message,
-        closable: true
-      })
+      // Message.error({
+      //   content: response.message,
+      //   closable: true
+      // })
+      isLoading.value = false
     }
   } catch (error) {
+    // 登录失败
+    Message.error({
+      content: '注册失败,系统异常！',
+      closable: true
+    })
+    isLoading.value = false
     console.error('注册失败！', error)
     // 清空表单
     formRef.value.resetFields()
   }
 }
-
 </script>
 
 <template>
@@ -194,7 +213,7 @@ const handleSubmit = async () => {
     <div class="login-page">
       <a href="/" class="logo-link">
         <div class="login-logo">
-          <img style="width: 44px;height: 100%" src="@/assets/favicon.png" alt="logo" />
+          <img style="width: 44px; height: 100%" src="@/assets/favicon.png" alt="logo" />
           <span style="font-weight: bolder">烁烁南光</span>
         </div>
       </a>
@@ -205,8 +224,8 @@ const handleSubmit = async () => {
           </div>
         </div>
         <div class="form-login">
-          <a-form ref="formRef" :model="form" :style="{width:'430px'}" auto-label-width @submit="handleSubmit"
-                  :rules="rules">
+          <a-form ref="formRef" :model="form" :style="{ width: '430px' }" auto-label-width @submit="handleSubmit"
+            :rules="rules">
             <a-form-item field="userAccount" label="账号" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.userAccount" placeholder="请输入账号" />
             </a-form-item>
@@ -214,27 +233,33 @@ const handleSubmit = async () => {
               <a-input v-model="form.userName" placeholder="请输入用户名" />
             </a-form-item>
             <a-form-item field="userPassword" label="密码" validate-trigger="blur" hide-asterisk>
-              <a-input-password v-model=" form.userPassword
-            " placeholder="请输入你的密码" />
+              <a-input-password v-model="form.userPassword" placeholder="请输入你的密码" />
             </a-form-item>
             <a-form-item field="checkPassword" label="确认密码" validate-trigger="blur" hide-asterisk>
-              <a-input-password v-model=" form.checkPassword
-            " placeholder="请输入你的第二遍密码" />
+              <a-input-password v-model="form.checkPassword" placeholder="请输入你的第二遍密码" />
             </a-form-item>
             <a-form-item field="email" label="邮箱" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.email" placeholder="请输入邮箱" />
-              <a-button
-                :disabled="isCountingDown"
-                @click="sendVerificationCode" style="cursor: pointer;margin-left: 5px;width: 30%;height: 32px;"
-                type="primary">
+              <a-button :disabled="isCountingDown" @click="sendVerificationCode"
+                style="cursor: pointer; margin-left: 5px; width: 30%; height: 32px" type="primary">
                 {{ isCountingDown ? `${countdown} 秒后重发` : '发送验证码' }}
               </a-button>
             </a-form-item>
             <a-form-item field="emailCaptcha" label="邮箱验证码" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.emailCaptcha" placeholder="请输入邮箱验证码" />
             </a-form-item>
-            <a-form-item>
+            <!-- <a-form-item>
               <a-button style="width: 100%" type="primary" html-type="submit">注册</a-button>
+            </a-form-item> -->
+            <a-form-item style="text-align: right">
+              <a-button style="width: 100%" type="primary" html-type="submit" :loading="isLoading">
+                <span v-if="isLoading">
+                  <a-spin>
+                    注册中...
+                  </a-spin>
+                </span>
+                <span v-else>注册</span>
+              </a-button>
             </a-form-item>
           </a-form>
           <div class="login-footer-top">
@@ -246,8 +271,8 @@ const handleSubmit = async () => {
             </a>
           </div>
           <div class="login-footer-center">
-            <span>注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和 <a href="/"
-                                                                                    target="_blank">隐私政策</a></span>
+            <span>注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和
+              <a href="/" target="_blank">隐私政策</a></span>
           </div>
           <div class="login-footer-bottom">
             <div class="login-footer-text">
@@ -267,7 +292,7 @@ const handleSubmit = async () => {
 }
 
 .login-page {
-  background: url("@/assets/background.png") 0 0 / 100% 100%;
+  background: url('@/assets/background.png') 0 0 / 100% 100%;
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -294,7 +319,6 @@ const handleSubmit = async () => {
 
 .arco-form-item-content-flex {
   justify-content: center;
-
 }
 
 .arco-btn-secondary {
@@ -308,7 +332,7 @@ const handleSubmit = async () => {
 
 .login-logo span {
   font-size: 33px;
-  color: #1890FF;
+  color: #1890ff;
   margin-left: 10px;
   font-weight: 500;
 }
@@ -334,7 +358,7 @@ const handleSubmit = async () => {
 }
 
 .login-footer-top a {
-  color: #1890FF;
+  color: #1890ff;
   text-decoration: none;
 }
 
@@ -344,7 +368,7 @@ const handleSubmit = async () => {
 }
 
 .login-footer-center a {
-  color: #1890FF;
+  color: #1890ff;
   text-decoration: none;
 }
 
