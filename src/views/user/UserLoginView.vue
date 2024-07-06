@@ -55,7 +55,7 @@ const rules = {
 
 // 提交表单
 const formRef = ref(null)
-const isLoading = ref(false);
+const isLoading = ref(false)
 const handleSubmit = async () => {
   try {
     isLoading.value = true
@@ -77,7 +77,7 @@ const handleSubmit = async () => {
       })
       isLoading.value = false
       // 更新store
-      await userStore.getLoginUser()
+      // await userStore.getLoginUser()
       // 跳转到首页
       router.push('/')
     } else {
@@ -95,7 +95,7 @@ const handleSubmit = async () => {
     console.error('登录失败', error)
     // 登录失败
     Message.error({
-      content: "系统异常，请稍后再试！",
+      content: '系统异常，请稍后再试！',
       closable: true
     })
     // 清空表单
@@ -144,8 +144,14 @@ function refreshCode() {
           </div>
         </div>
         <div class="form-login">
-          <a-form ref="formRef" :model="form" :style="{ width: '330px' }" auto-label-width @submit="handleSubmit"
-            :rules="rules">
+          <a-form
+            ref="formRef"
+            :model="form"
+            :style="{ width: '330px' }"
+            auto-label-width
+            @submit="handleSubmit"
+            :rules="rules"
+          >
             <a-form-item field="userAccount" label="账号" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.userAccount" placeholder="请输入账号" />
             </a-form-item>
@@ -154,15 +160,17 @@ function refreshCode() {
             </a-form-item>
             <a-form-item field="imageCaptcha" label="验证码" validate-trigger="blur" hide-asterisk>
               <a-input v-model="form.imageCaptcha" placeholder="请输入图片验证码" />
-              <img style="cursor: pointer; margin-left: 5px; width: 40%; height: 32px" :src="captchaImageSrc"
-                alt="图片验证码" @click="refreshCode()" />
+              <img
+                style="cursor: pointer; margin-left: 5px; width: 40%; height: 32px"
+                :src="captchaImageSrc"
+                alt="图片验证码"
+                @click="refreshCode()"
+              />
             </a-form-item>
             <a-form-item style="text-align: right">
               <a-button style="width: 100%" type="primary" html-type="submit" :loading="isLoading">
                 <span v-if="isLoading">
-                  <a-spin>
-                    登录中...
-                  </a-spin>
+                  <a-spin> 登录中... </a-spin>
                 </span>
                 <span v-else>登录</span>
               </a-button>
@@ -177,14 +185,25 @@ function refreshCode() {
             </a>
           </div>
           <div class="login-footer-center">
-            <span>注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和
-              <a href="/" target="_blank">隐私政策</a></span>
+            <span
+              >注册登录即表示同意 <a href="/" target="_blank">用户协议</a> 和
+              <a href="/" target="_blank">隐私政策</a></span
+            >
           </div>
           <div class="login-footer-bottom">
             <div class="login-footer-text">
               <span class="login-footer-text-span">Copyright © 2024 - 至今 </span>
               <span class="login-footer-text-span"> </span>
-              <span class="login-footer-text-span">保留所有权利</span>
+              <span class="login-footer-text-span">
+                by
+                <a
+                  target="_blank"
+                  style="text-decoration: none"
+                  href="https://github.com/nanshuo0814"
+                  >南烁</a
+                ></span
+              >
+              <span class="login-footer-text-span"> 保留所有权利</span>
             </div>
           </div>
         </div>

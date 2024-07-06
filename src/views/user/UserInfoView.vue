@@ -2,9 +2,7 @@
 </script>
 
 <template>
-  <div id="app">
-    这是首页
-  </div>
+    这是用户信息页面
 </template>
 
 <style scoped>

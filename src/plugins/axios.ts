@@ -27,6 +27,7 @@ axios.interceptors.response.use(
         content: response.data.message,
         closable: true
       })
+      // console.log('请求错误啦~')
       if (response.data.code === 40101 || response.data.code === 40300) {
         console.log('无权限')
         router.push('/noPermission')
@@ -36,10 +37,12 @@ axios.interceptors.response.use(
   },
   function (error) {
     // 超出 2xx 范围的状态码都会触发该函数。
-    if (error.response.status === 500) {
-      console.log('服务器错误啦~')
-      router.push('/systemError')
-    }
+    console.log('未连接到服务器~')
+    router.push('/systemError')
+    Message.error({
+      content: '服务器错误，请联系管理员',
+      closable: true
+    })
     return Promise.reject(error)
   }
 )

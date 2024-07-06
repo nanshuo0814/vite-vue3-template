@@ -7,7 +7,7 @@ import {
 } from '../../../generated'
 import { Message } from '@arco-design/web-vue'
 import UserEmailCaptchaType from '@/constant/UserEmailCaptchaType'
-import CodeStatus from '@/constant/CodeStatus';
+import CodeStatus from '@/constant/CodeStatus'
 
 // 定义进度状态
 const progressSteps = ref(4)
@@ -206,11 +206,7 @@ const rules = {
             <div class="progress-step-description" v-if="currentProgress >= 0">
               {{ getCurrentStepDescription() }}
             </div>
-            <a-progress
-              animation
-              :steps="progressSteps"
-              :percent="(currentProgress + 1) / progressSteps"
-            />
+            <a-progress animation :steps="progressSteps" :percent="(currentProgress + 1) / progressSteps" />
           </div>
           <div class="content-center">
             <div v-if="currentProgress === 0">
@@ -219,24 +215,20 @@ const rules = {
               <a-form-item validate-trigger="blur" field="email" hide-label hide-asterisk>
                 <a-input v-model="form.email" placeholder="请输入邮箱地址" />
               </a-form-item>
-              <a-button type="primary" @click="sendEmail" :loading="isLoading"
-                ><span v-if="isLoading">
+              <a-button type="primary" @click="sendEmail" :loading="isLoading"><span v-if="isLoading">
                   <a-spin> Loading... </a-spin>
                 </span>
-                <span v-else>发送验证码</span></a-button
-              >
+                <span v-else>发送验证码</span></a-button>
             </div>
             <div v-else-if="currentProgress === 1">
               <a-button type="primary" @click="goToPreviousStep">上一步</a-button>
               <h2>输入收到的验证码</h2>
               <a-form-item validate-trigger="blur" field="code" hide-label hide-asterisk>
                 <a-input v-model="form.code" placeholder="请输入验证码" />
-                <a-button type="primary" @click="verifyCode('your-code')" :loading="isLoading"
-                  ><span v-if="isLoading">
+                <a-button type="primary" @click="verifyCode('your-code')" :loading="isLoading"><span v-if="isLoading">
                     <a-spin> Loading... </a-spin>
                   </span>
-                  <span v-else>验证</span></a-button
-                >
+                  <span v-else>验证</span></a-button>
               </a-form-item>
             </div>
             <div v-else-if="currentProgress === 2">
@@ -249,12 +241,10 @@ const rules = {
                 <a-input-password v-model="form.confirmPassword" placeholder="确认新密码" />
               </a-form-item>
               <a-form-item validate-trigger="blur" field="" hide-label hide-asterisk>
-                <a-button type="primary" @click="resetPassword" :loading="isLoading"
-                  ><span v-if="isLoading">
+                <a-button type="primary" @click="resetPassword" :loading="isLoading"><span v-if="isLoading">
                     <a-spin> Loading... </a-spin>
                   </span>
-                  <span v-else>完成重置</span></a-button
-                >
+                  <span v-else>完成重置</span></a-button>
               </a-form-item>
             </div>
             <div v-else-if="currentProgress === 3">
@@ -272,10 +262,9 @@ const rules = {
             <span class="login-footer-text-span">Copyright © 2024 - 至今 </span>
             <span class="login-footer-text-span">
               by
-              <strong
-                ><a target="_blank" href="https://github.com/nanshuo0814">南烁</a></strong
-              ></span
-            >
+
+              <a target="_blank" style="text-decoration: none" href="https://github.com/nanshuo0814">南烁</a>
+            </span>
             <span class="login-footer-text-span"> 保留所有权利</span>
           </div>
         </div>
